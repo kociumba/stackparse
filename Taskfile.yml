@@ -1,0 +1,13 @@
+# https://taskfile.dev
+
+version: '3'
+
+tasks:
+  publish:
+    vars:
+      GOPROXY: proxy.golang.org
+    cmds:
+    - go mod tidy
+    - git tag {{.V}}
+    - git push origin {{.V}}
+    - go list -m github.com/kociumba/stackparse@{{.V}}
