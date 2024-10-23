@@ -20,23 +20,24 @@ func DefaultTheme() *Theme {
 		Base: lipgloss.NewStyle().PaddingLeft(2),
 		Goroutine: lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("#00ADD8")).
+			// Foreground(lipgloss.Color("#00ADD8")).
+			Foreground(lipgloss.Color("#ed8796")).
 			MarginTop(1).
 			MarginBottom(1),
 		Function: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#98C379")),
+			Foreground(lipgloss.Color("#f0c6c6")),
 		Args: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#61AFEF")).
+			Foreground(lipgloss.Color("#7dc4e4")).
 			PaddingLeft(2),
 		File: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#C678DD")),
+			Foreground(lipgloss.Color("#f5a97f")),
 		Line: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#E5C07B")).
-			PaddingLeft(2),
+			Foreground(lipgloss.Color("#eed49f")),
+		// PaddingLeft(2),
 		CreatedBy: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#E06C75")),
+			Foreground(lipgloss.Color("#ee99a0")),
 		Repeat: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#E06C75")).
-			Italic(true),
+			Italic(true).
+			Faint(true),
 	}
 }
