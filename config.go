@@ -11,6 +11,8 @@ type Config struct {
 type Option func(*Config)
 
 // NewConfig creates a new configuration with default values
+//
+// Mostly used internally but exposed for some edge cases
 func NewConfig() *Config {
 	return &Config{
 		Colorize: true,

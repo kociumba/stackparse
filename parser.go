@@ -25,6 +25,8 @@ type Patterns struct {
 }
 
 // NewParser creates a new Parser instance with the given options
+//
+// Mostly used internally but exposed for some edge cases
 func NewParser(options ...Option) *Parser {
 	config := NewConfig()
 	for _, opt := range options {
@@ -45,11 +47,14 @@ func NewParser(options ...Option) *Parser {
 }
 
 // Parse converts a byte slice containing a stack trace into a StackTrace
+//
+// I you are usting this by itself and not by simply calling stackparse.Parse(), always call this before the formatter.
 func (p *Parser) Parse(stack []byte) []*StackTrace {
 	lines := strings.Split(string(stack), "\n")
 	return p.parseLines(lines)
 }
 
+// Assigns the types of lines to the StackTrace
 func (p *Parser) parseLines(lines []string) []*StackTrace {
 	var traces []*StackTrace
 	var currentTrace *StackTrace
@@ -187,6 +192,7 @@ func (p *Parser) parseLines(lines []string) []*StackTrace {
 	return traces
 }
 
+// Simple utility wrapper
 func (p *Parser) simplifyPath(path string) string {
 	if p.config.Simple {
 		return filepath.Base(path)

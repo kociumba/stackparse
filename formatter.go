@@ -14,14 +14,20 @@ type Formatter struct {
 }
 
 // NewFormatter creates a new Formatter instance
+//
+// Mostly used internally, but exposed for some edge cases
 func NewFormatter(config *Config) *Formatter {
-	return &Formatter{config: config}
+	return &Formatter{
+		config: config,
+	}
 }
 
 // Format converts a StackTrace into a formatted string
+//
+// If you are using this by itself without calling stackparse.Parse(), you should call this after the parser.
 func (f *Formatter) Format(traces []*StackTrace) string {
 	if !f.config.Colorize {
-		f.disableColors()
+		f.config.Theme.DisableStyles() // disable styles, leave formatting styles
 	}
 
 	var result []string
@@ -34,41 +40,27 @@ func (f *Formatter) Format(traces []*StackTrace) string {
 }
 
 func (f *Formatter) formatTrace(trace *StackTrace) string {
-	var result []string
+	// var result []string
+	var result *tree.Tree
 
 	// Format goroutine header
 	header := fmt.Sprintf("Goroutine %s: %s",
 		trace.GoroutineID, trace.GoroutineState)
-	result = append(result, f.config.Theme.Goroutine.Render(header))
+	// result = append(result, f.config.Theme.Goroutine.Render(header))
+	result = tree.New().Root(f.config.Theme.Goroutine.Render(header))
 
 	// Calculate widths and counts
 	functionCounts := f.countFunctions(trace.Entries)
-	maxWidths := f.calculateMaxWidths(trace.Entries)
 
 	// Format entries
 	for _, entry := range trace.Entries {
-		formattedEntry := f.formatEntry(entry, functionCounts, maxWidths)
-		result = append(result, formattedEntry)
+		formattedEntry := f.formatEntry(entry, functionCounts)
+		// result = append(result, formattedEntry)
+		result.Child(formattedEntry)
 	}
 
-	return strings.Join(result, "\n")
-}
-
-// MaxWidths holds the maximum widths for different components
-type MaxWidths struct {
-	Function int
-	File     int
-	Line     int
-}
-
-func (f *Formatter) calculateMaxWidths(entries []StackEntry) MaxWidths {
-	var maxWidths MaxWidths
-	for _, entry := range entries {
-		maxWidths.Function = max(maxWidths.Function, lipgloss.Width(entry.FunctionName))
-		maxWidths.File = max(maxWidths.File, lipgloss.Width(entry.File))
-		maxWidths.Line = max(maxWidths.Line, lipgloss.Width(entry.Line))
-	}
-	return maxWidths
+	// return strings.Join(result, "\n")
+	return result.String()
 }
 
 func (f *Formatter) countFunctions(entries []StackEntry) map[string]int {
@@ -79,7 +71,7 @@ func (f *Formatter) countFunctions(entries []StackEntry) map[string]int {
 	return counts
 }
 
-func (f *Formatter) formatEntry(entry StackEntry, functionCounts map[string]int, maxWidths MaxWidths) string {
+func (f *Formatter) formatEntry(entry StackEntry, functionCounts map[string]int) string {
 	var currentTree *tree.Tree
 
 	// Function name with potential truncation indicator
@@ -126,14 +118,4 @@ func (f *Formatter) formatEntry(entry StackEntry, functionCounts map[string]int,
 	}
 
 	return currentTree.String()
-}
-
-func (f *Formatter) disableColors() {
-	f.config.Theme.Goroutine.UnsetForeground()
-	f.config.Theme.Function.UnsetForeground()
-	f.config.Theme.Args.UnsetForeground()
-	f.config.Theme.File.UnsetForeground()
-	f.config.Theme.Line.UnsetForeground()
-	f.config.Theme.CreatedBy.UnsetForeground()
-	f.config.Theme.Repeat.UnsetForeground()
 }
