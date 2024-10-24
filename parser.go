@@ -1,9 +1,12 @@
 package stackparse
 
 import (
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"golang.org/x/term"
 )
 
 // Parser handles the parsing of stack traces
@@ -80,46 +83,6 @@ func (p *Parser) parseLines(lines []string) []*StackTrace {
 			continue
 		}
 
-		// Handle function calls
-		if match := p.patterns.Function.FindStringSubmatch(line); match != nil {
-			if currentEntry != nil {
-				currentTrace.Entries = append(currentTrace.Entries, *currentEntry)
-			}
-
-			funcName := match[1]
-			args := match[2]
-
-			// Handle long function names
-			if len(funcName) > 60 { // Configurable threshold
-				parts := strings.Split(funcName, "/")
-				if len(parts) > 3 {
-					// Keep the last three parts
-					funcName = ".../" + strings.Join(parts[len(parts)-3:], "/")
-				}
-			}
-
-			currentEntry = &StackEntry{
-				FunctionName: funcName,
-				Args:         args,
-				FullName:     match[1], // Store full name for reference
-			}
-			continue
-		}
-
-		// Handle file locations
-		if match := p.patterns.Location.FindStringSubmatch(line); match != nil && currentEntry != nil {
-			filePath := match[1]
-			if p.config.Simple {
-				filePath = p.simplifyPath(filePath)
-			}
-			currentEntry.File = filePath
-			currentEntry.Line = match[2]
-			if len(match) > 3 && match[3] != "" {
-				currentEntry.Offset = match[3]
-			}
-			continue
-		}
-
 		// Handle "created by" lines
 		if match := p.patterns.CreatedBy.FindStringSubmatch(line); match != nil {
 			if currentEntry != nil {
@@ -147,6 +110,72 @@ func (p *Parser) parseLines(lines []string) []*StackTrace {
 				i++
 			}
 			continue
+		}
+
+		// Try to match function calls - first try simple function pattern
+		match := p.patterns.Function.FindStringSubmatch(line)
+		if match == nil {
+			// If simple pattern doesn't match, try long function pattern
+			match = p.patterns.LongFunc.FindStringSubmatch(line)
+		}
+
+		if match != nil {
+			if currentEntry != nil {
+				currentTrace.Entries = append(currentTrace.Entries, *currentEntry)
+			}
+
+			funcName := match[1]
+			args := match[2]
+
+			fd := int(os.Stdout.Fd())
+			termWidth, _, err := term.GetSize(fd)
+			if err != nil {
+				termWidth = 60 * 8
+			}
+
+			// Handle long function names
+			if len(funcName) > termWidth/8 && p.config.Simple { // Only simplify if config.Simple is true
+				parts := strings.Split(funcName, "/")
+				if len(parts) > 3 {
+					// Keep the last three parts
+					funcName = ".../" + strings.Join(parts[len(parts)-3:], "/")
+				}
+			}
+
+			currentEntry = &StackEntry{
+				FunctionName: funcName,
+				Args:         args,
+				FullName:     match[1], // Store full name for reference
+			}
+
+			// Look ahead for location
+			if i+1 < len(lines) && p.patterns.Location.MatchString(lines[i+1]) {
+				locMatch := p.patterns.Location.FindStringSubmatch(lines[i+1])
+				filePath := locMatch[1]
+				if p.config.Simple {
+					filePath = p.simplifyPath(filePath)
+				}
+				currentEntry.File = filePath
+				currentEntry.Line = locMatch[2]
+				if len(locMatch) > 3 && locMatch[3] != "" {
+					currentEntry.Offset = locMatch[3]
+				}
+				i++
+			}
+			continue
+		}
+
+		// Handle file locations if we somehow missed them earlier
+		if match := p.patterns.Location.FindStringSubmatch(line); match != nil && currentEntry != nil {
+			filePath := match[1]
+			if p.config.Simple {
+				filePath = p.simplifyPath(filePath)
+			}
+			currentEntry.File = filePath
+			currentEntry.Line = match[2]
+			if len(match) > 3 && match[3] != "" {
+				currentEntry.Offset = match[3]
+			}
 		}
 	}
 
