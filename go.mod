@@ -1,6 +1,6 @@
 module github.com/kociumba/stackparse
 
-go 1.23.0
+go 1.20
 
 require github.com/charmbracelet/lipgloss v0.13.1
 

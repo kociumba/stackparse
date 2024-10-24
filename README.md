@@ -1,5 +1,7 @@
 # stackparse
 
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/b3c8e57d263348939c207fd2f5f6e6f0)](https://app.codacy.com/gh/kociumba/stackparse/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+
 A Go library for parsing and formatting stack traces with powerful customization options. This library makes debugging crashes and deliberate stack dumps more manageable by providing beautifully formatted stack traces with customizable styling.
 
 ## Installation
